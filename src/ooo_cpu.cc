@@ -472,7 +472,6 @@ long O3_CPU::operate_lsq()
   std::for_each(fetch_begin, fetch_end, [cycle = current_cycle, this](auto& sq_entry) {
     this->do_finish_store(sq_entry);
     sq_entry.fetch_issued = true;
-    sim_stats.data_foot_print.insert(lq_entry->ip >> LOG2_BLOCK_SIZE);
     sq_entry.event_cycle = cycle;
   });
 
@@ -489,6 +488,7 @@ long O3_CPU::operate_lsq()
       if (success) {
         --load_bw;
         lq_entry->fetch_issued = true;
+        sim_stats.data_foot_print.insert(lq_entry->ip >> LOG2_BLOCK_SIZE);
       }
     }
   }
