@@ -247,6 +247,7 @@ long O3_CPU::fetch_instruction()
     auto success = do_fetch_instruction(l1i_req_begin, l1i_req_end);
     if (success) {
       std::for_each(l1i_req_begin, l1i_req_end, [](auto& x) { x.fetched = INFLIGHT; });
+      sim_stats.instr_foot_print.insert(l1i_req_begin->ip >> LOG2_BLOCK_SIZE);
       ++progress;
     }
 
@@ -471,6 +472,7 @@ long O3_CPU::operate_lsq()
   std::for_each(fetch_begin, fetch_end, [cycle = current_cycle, this](auto& sq_entry) {
     this->do_finish_store(sq_entry);
     sq_entry.fetch_issued = true;
+    sim_stats.data_foot_print.insert(lq_entry->ip >> LOG2_BLOCK_SIZE);
     sq_entry.event_cycle = cycle;
   });
 
@@ -519,8 +521,14 @@ bool O3_CPU::do_complete_store(const LSQ_ENTRY& sq_entry)
     fmt::print("[SQ] {} instr_id: {} vaddr: {:x}\n", __func__, data_packet.instr_id, data_packet.v_address);
   }
 
-  return L1D_bus.issue_write(data_packet);
-}
+  //return L1D_bus.issue_write(data_packet);
+  bool success = L1D_bus.issue_write(data_packet);
+  if(success){
+    sim_stats.data_foot_print.insert(data_packet.ip >> LOG2_BLOCK_SIZE);
+  }
+  
+  return success;
+ }
 
 bool O3_CPU::execute_load(const LSQ_ENTRY& lq_entry)
 {
